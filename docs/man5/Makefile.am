@@ -3,7 +3,8 @@ MAN5_FILES  = \
 
 A2X_ARGS = \
 	-d manpage \
-	-f manpage
+	-f manpage \
+        -L
 
 man_MANS = \
 	$(MAN5_FILES:.txt=.5)

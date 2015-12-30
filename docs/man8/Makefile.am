@@ -3,7 +3,8 @@ MAN8_FILES = \
 
 A2X_ARGS = \
 	-d manpage \
-	-f manpage
+	-f manpage \
+        -L
 
 man_MANS = \
 	$(MAN8_FILES:.txt=.8)
