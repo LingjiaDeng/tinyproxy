@@ -29,6 +29,7 @@
 #include "heap.h"
 #include "log.h"
 #include "stats.h"
+#include "upstream.h"
 
 struct conn_s *initialize_conn (int client_fd, const char *ipaddr,
                                 const char *string_addr,
@@ -141,6 +142,11 @@ void destroy_conn (struct conn_s *connptr)
         if (connptr->reversepath)
                 safefree (connptr->reversepath);
 #endif
+
+#ifdef UPSTREAM_SUPPORT
+        if (connptr->upstream_proxy)
+                free_upstream_info (connptr->upstream_proxy);
+#endif /* UPSTREAM_SUPPORT */
 
         safefree (connptr);
 

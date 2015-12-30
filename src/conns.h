@@ -85,7 +85,7 @@ struct conn_s {
         /*
          * Pointer to upstream proxy.
          */
-        struct upstream *upstream_proxy;
+        struct upstream_info *upstream_proxy;
 };
 
 /*

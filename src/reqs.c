@@ -59,8 +59,8 @@
  * enabled.
  */
 #ifdef UPSTREAM_SUPPORT
-#  define UPSTREAM_CONFIGURED() (config.upstream_list != NULL)
-#  define UPSTREAM_HOST(host) upstream_get(host, config.upstream_list)
+#  define UPSTREAM_CONFIGURED() (config.up_config != NULL)
+#  define UPSTREAM_HOST(host) upstream_get(host, config.up_config)
 #else
 #  define UPSTREAM_CONFIGURED() (0)
 #  define UPSTREAM_HOST(host) (NULL)
@@ -1275,7 +1275,7 @@ connect_to_upstream (struct conn_s *connptr, struct request_s *request)
         char *combined_string;
         int len;
 
-        struct upstream *cur_upstream = connptr->upstream_proxy;
+        struct upstream_info *cur_upstream = connptr->upstream_proxy;
 
         if (!cur_upstream) {
                 log_message (LOG_WARNING,

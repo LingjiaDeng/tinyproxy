@@ -297,7 +297,8 @@ static void free_config (struct config_s *conf)
         safefree (conf->reversebaseurl);
 #endif
 #ifdef UPSTREAM_SUPPORT
-        free_upstream_list (conf->upstream_list);
+        if (conf->up_config)
+                free_upstream_config (conf->up_config);
 #endif                          /* UPSTREAM_SUPPORT */
         safefree (conf->pidpath);
         safefree (conf->bind_address);
@@ -504,7 +505,7 @@ static void initialize_with_defaults (struct config_s *conf,
 #endif
 
 #ifdef UPSTREAM_SUPPORT
-        /* struct upstream *upstream_list; */
+        conf->up_config = init_upstream_config();
 #endif                          /* UPSTREAM_SUPPORT */
 
         if (defaults->pidpath) {
@@ -1084,11 +1085,11 @@ static HANDLE_FUNC (handle_upstream)
         if (match[10].rm_so != -1) {
                 domain = get_string_arg (line, &match[10]);
                 if (domain) {
-                        upstream_add (ip, port, domain, &conf->upstream_list);
+                        upstream_add (ip, port, domain, conf->up_config);
                         safefree (domain);
                 }
         } else {
-                upstream_add (ip, port, NULL, &conf->upstream_list);
+                upstream_add (ip, port, NULL, conf->up_config);
         }
 
         safefree (ip);
@@ -1104,7 +1105,7 @@ static HANDLE_FUNC (handle_upstream_no)
         if (!domain)
                 return -1;
 
-        upstream_add (NULL, 0, domain, &conf->upstream_list);
+        upstream_add (NULL, 0, domain, conf->up_config);
         safefree (domain);
 
         return 0;

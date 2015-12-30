@@ -63,7 +63,7 @@ struct config_s {
         char *reversebaseurl;
 #endif
 #ifdef UPSTREAM_SUPPORT
-        struct upstream *upstream_list;
+        struct upstream_config *up_config;
 #endif                          /* UPSTREAM_SUPPORT */
         char *pidpath;
         unsigned int idletimeout;

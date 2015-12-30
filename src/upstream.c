@@ -29,6 +29,15 @@
 #include "log.h"
 
 #ifdef UPSTREAM_SUPPORT
+
+struct upstream {
+        struct upstream *next;
+        char *domain;           /* optional */
+        char *host;
+        int port;
+        in_addr_t ip, mask;
+};
+
 /**
  * Construct an upstream struct from input data.
  */
@@ -115,11 +124,21 @@ fail:
         return NULL;
 }
 
+struct upstream_config* init_upstream_config(void)
+{
+        struct upstream_config* up_config;
+
+        up_config = (struct upstream_config *) safemalloc (sizeof (struct upstream_config));
+        up_config->list = NULL;
+
+        return up_config;
+}
+
 /*
  * Add an entry to the upstream list
  */
 void upstream_add (const char *host, int port, const char *domain,
-                   struct upstream **upstream_list)
+                   struct upstream_config* up_config)
 {
         struct upstream *up;
 
@@ -129,7 +148,7 @@ void upstream_add (const char *host, int port, const char *domain,
         }
 
         if (!up->domain && !up->ip) {   /* always add default to end */
-                struct upstream *tmp = *upstream_list;
+                struct upstream *tmp = up_config->list;
 
                 while (tmp) {
                         if (!tmp->domain && !tmp->ip) {
@@ -148,8 +167,8 @@ void upstream_add (const char *host, int port, const char *domain,
                 }
         }
 
-        up->next = *upstream_list;
-        *upstream_list = up;
+        up->next = up_config->list;
+        up_config->list = up;
 
         return;
 
@@ -164,9 +183,10 @@ upstream_cleanup:
 /*
  * Check if a host is in the upstream list
  */
-struct upstream *upstream_get (char *host, struct upstream *up)
+struct upstream_info *upstream_get (char *host, struct upstream_config *up_config)
 {
         in_addr_t my_ip = INADDR_NONE;
+        struct upstream* up = up_config->list;
 
         while (up) {
                 if (up->domain) {
@@ -201,17 +221,29 @@ struct upstream *upstream_get (char *host, struct upstream *up)
         if (up && (!up->host || !up->port))
                 up = NULL;
 
-        if (up)
-                log_message (LOG_INFO, "Found upstream proxy %s:%d for %s",
-                             up->host, up->port, host);
-        else
-                log_message (LOG_INFO, "No upstream proxy for %s", host);
+        if (up) {
+                struct upstream_info *ret = (struct upstream_info*) safemalloc (sizeof (struct upstream_info));
+                ret->host = safestrdup (up->host);
+                ret->port = up->port;
 
-        return up;
+                log_message (LOG_INFO, "Found upstream proxy %s:%d for %s",
+                             ret->host, ret->port, host);
+                return ret;
+        } else {
+                log_message (LOG_INFO, "No upstream proxy for %s", host);
+                return NULL;
+        }
 }
 
-void free_upstream_list (struct upstream *up)
+void free_upstream_info (struct upstream_info *up_info)
 {
+        safefree (up_info->host);
+        safefree (up_info);
+}
+
+void free_upstream_config (struct upstream_config *up_config)
+{
+        struct upstream* up = up_config->list;
         while (up) {
                 struct upstream *tmp = up;
                 up = up->next;
@@ -219,6 +251,8 @@ void free_upstream_list (struct upstream *up)
                 safefree (tmp->host);
                 safefree (tmp);
         }
+
+        safefree (up_config);
 }
 
 #endif

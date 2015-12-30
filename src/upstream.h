@@ -31,19 +31,23 @@
  * Even if upstream support is not compiled into tinyproxy, this
  * structure still needs to be defined.
  */
-struct upstream {
-        struct upstream *next;
-        char *domain;           /* optional */
+struct upstream;
+struct upstream_config {
+        struct upstream* list;
+};
+
+struct upstream_info {
         char *host;
         int port;
-        in_addr_t ip, mask;
 };
 
 #ifdef UPSTREAM_SUPPORT
+extern struct upstream_config* init_upstream_config(void);
 extern void upstream_add (const char *host, int port, const char *domain,
-                          struct upstream **upstream_list);
-extern struct upstream *upstream_get (char *host, struct upstream *up);
-extern void free_upstream_list (struct upstream *up);
+                          struct upstream_config* up_config);
+extern struct upstream_info* upstream_get (char *host, struct upstream_config *up_config);
+extern void free_upstream_info (struct upstream_info* up_info);
+extern void free_upstream_config (struct upstream_config *up_config);
 #endif /* UPSTREAM_SUPPORT */
 
 #endif /* _TINYPROXY_UPSTREAM_H_ */
