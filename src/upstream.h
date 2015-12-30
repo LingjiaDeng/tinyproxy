@@ -27,6 +27,8 @@
 
 #include "common.h"
 
+#include <proxy.h>
+
 /*
  * Even if upstream support is not compiled into tinyproxy, this
  * structure still needs to be defined.
@@ -34,6 +36,7 @@
 struct upstream;
 struct upstream_config {
         struct upstream* list;
+        pxProxyFactory* proxy;
 };
 
 struct upstream_info {

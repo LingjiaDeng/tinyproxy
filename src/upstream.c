@@ -28,6 +28,8 @@
 #include "heap.h"
 #include "log.h"
 
+#include <limits.h>
+
 #ifdef UPSTREAM_SUPPORT
 
 struct upstream {
@@ -130,6 +132,7 @@ struct upstream_config* init_upstream_config(void)
 
         up_config = (struct upstream_config *) safemalloc (sizeof (struct upstream_config));
         up_config->list = NULL;
+        up_config->proxy = px_proxy_factory_new();
 
         return up_config;
 }
@@ -180,6 +183,58 @@ upstream_cleanup:
         return;
 }
 
+static const char HTTP_PRE[] = "http://";
+static const int HTTP_PRE_LENGTH = (sizeof(HTTP_PRE)/sizeof(HTTP_PRE[0])) - 1;
+
+static const char DIRECT_PROXY[] = "direct://";
+
+static struct upstream_info *detect_proxy (pxProxyFactory* factory, const char* host)
+{
+        struct upstream_info *ret = NULL;
+        int proxy_resolved = 0;
+        char **proxies = NULL, **proxy_ptr = NULL;
+        const int host_str_len = HTTP_PRE_LENGTH + strlen(host) + 1;
+        char *host_str = (char*) safemalloc (host_str_len);
+
+        snprintf (host_str, host_str_len, "%s%s", HTTP_PRE, host);
+        proxies = px_proxy_factory_get_proxies (factory, host_str);
+        proxy_ptr = proxies;
+        while (*proxy_ptr) {
+                int proxy_len = 0;
+                if (proxy_resolved) {
+                        free (*proxy_ptr);
+                } else if ((proxy_len = strlen (*proxy_ptr)) > HTTP_PRE_LENGTH &&
+                           !strncmp (*proxy_ptr, HTTP_PRE, HTTP_PRE_LENGTH) &&
+                           NULL == strchr (*proxy_ptr, '@')) {
+                        /* If this is a HTTP proxy, without any username/password auth, then we support it */
+                        char* host_port = strdup (*proxy_ptr + HTTP_PRE_LENGTH);
+                        char* colon_pos = strchr (host_port, ':');
+                        ret = (struct upstream_info*) safemalloc (sizeof (struct upstream_info));
+                        ret->port = 80;
+                        if (colon_pos) {
+                                long port_num = strtol (colon_pos + 1, NULL, 10);
+                                *colon_pos = '\0'; /* truncate host */
+                                if (port_num <= 0 || port_num > USHRT_MAX) {
+                                        port_num = 80;
+                                }
+                                ret->port = (int) port_num;
+                        }
+                        ret->host = host_port;
+                        proxy_resolved = 1;
+                } else if (! strcmp (*proxy_ptr, DIRECT_PROXY)) {
+                        /* ret stays NULL */
+                        proxy_resolved = 1;
+                        free (*proxy_ptr);
+                } else {
+                        free (*proxy_ptr);
+                }
+                proxy_ptr ++;
+        }
+
+        free (proxies);
+        return ret;
+}
+
 /*
  * Check if a host is in the upstream list
  */
@@ -218,6 +273,17 @@ struct upstream_info *upstream_get (char *host, struct upstream_config *up_confi
                 up = up->next;
         }
 
+        if (up && up->host && !strcmp (up->host, "detect")) {
+                struct upstream_info *ret = detect_proxy (up_config->proxy, host);
+                if (ret) {
+                        log_message (LOG_INFO, "Detected upstream proxy %s:%d for %s",
+                                     ret->host, ret->port, host);
+                } else {
+                        log_message (LOG_INFO, "Detected no upstream proxy for %s", host);
+                }
+                return ret;
+        }
+
         if (up && (!up->host || !up->port))
                 up = NULL;
 
@@ -251,7 +317,7 @@ void free_upstream_config (struct upstream_config *up_config)
                 safefree (tmp->host);
                 safefree (tmp);
         }
-
+        px_proxy_factory_free (up_config->proxy);
         safefree (up_config);
 }
 

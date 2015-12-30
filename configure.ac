@@ -158,6 +158,10 @@ if test x"$tinyproxy_no_nsl_checks" != x"yes"; then
     AC_CHECK_LIB(nsl, gethostname, , [AC_CHECK_LIB(nsl, gethostbyaddr)])
 fi
 
+if test x"$upstream_enabled" = x"yes"; then
+    AC_CHECK_LIB(proxy, px_proxy_factory_new)
+fi
+
 AC_CHECK_LIB(resolv, inet_aton)
 
 dnl
@@ -168,7 +172,7 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([sys/ioctl.h sys/mman.h sys/resource.h \
 		  sys/select.h sys/socket.h sys/time.h sys/uio.h \
-		  sys/un.h arpa/inet.h netinet/in.h \
+		  sys/malloc.h sys/un.h arpa/inet.h netinet/in.h \
 		  assert.h ctype.h errno.h fcntl.h grp.h io.h libintl.h \
 		  netdb.h pwd.h regex.h signal.h stdarg.h stddef.h stdio.h \
 		  sysexits.h syslog.h time.h wchar.h wctype.h \
@@ -209,7 +213,11 @@ AC_CHECK_FUNCS([time rand srand])
 
 
 dnl Enable extra warnings
-DESIRED_FLAGS="-fdiagnostics-show-option -Wall -Wextra -Wno-unused-parameter -Wmissing-prototypes -Wstrict-prototypes -Wmissing-declarations -Wfloat-equal -Wundef -Wformat=2 -Wlogical-op -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Waggregate-return -Winit-self -Wpacked --std=c89 -ansi -pedantic -Wno-overlength-strings -Wc++-compat -Wno-long-long -Wno-overlength-strings -Wdeclaration-after-statement -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-qual -Wcast-align -Wwrite-strings -Wp,-D_FORTIFY_SOURCE=2 -fno-common"
+DESIRED_FLAGS="-fdiagnostics-show-option -Wall -Wextra -Wno-unused-parameter -Wmissing-prototypes -Wstrict-prototypes -Wmissing-declarations -Wfloat-equal -Wundef -Wformat=2 -Wmissing-include-dirs -Wold-style-definition -Wpointer-arith -Waggregate-return -Winit-self -Wpacked --std=c89 -ansi -pedantic -Wno-overlength-strings -Wc++-compat -Wno-long-long -Wno-overlength-strings -Wdeclaration-after-statement -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-qual -Wcast-align -Wwrite-strings -Wp,-D_FORTIFY_SOURCE=2 -fno-common"
+
+case `($CC --version) 2>/dev/null` in
+   'gcc (GCC) '*) DESIRED_FLAGS="$DESIRED_FLAGS -Wlogical-op -Wformat-nonliteral";;
+esac
 
 if test -n "${MAINTAINER_MODE_FALSE}"; then
    DESIRED_FLAGS="-Werror $DESIRED_FLAGS"
