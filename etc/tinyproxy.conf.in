@@ -167,6 +167,7 @@ LogLevel Info
 #  IP/mask  matches network/mask
 #
 #Upstream some.remote.proxy:port
+Upstream detect:1111
 
 #
 # MaxClients: This is the absolute highest number of threads which will
@@ -207,7 +208,7 @@ MaxRequestsPerChild 0
 # The order of the controls are important. All incoming connections are
 # tested against the controls based on order.
 #
-Allow 127.0.0.1
+#Allow 127.0.0.1
 
 #
 # AddHeader: Adds the specified headers to outgoing HTTP requests that
